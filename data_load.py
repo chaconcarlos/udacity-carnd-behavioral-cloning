@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-
+import os
 import csv
-import numpy as np
 import cv2
 import glob
 import math
 import keras
+import ntpath
+import numpy as np
 from keras.models               import Sequential
 from keras.optimizers           import Adam
 from keras.layers.core          import Dense, Lambda, Activation, Flatten, Dropout
@@ -15,6 +16,8 @@ from keras.preprocessing.image  import ImageDataGenerator
 from keras.layers.convolutional import Convolution2D, Cropping2D
 from sklearn.model_selection    import train_test_split
 
+IMAGES_PATH_NAME       = "IMG"
+CSV_FILENAME           = "driving_log.csv"
 CSV_FIELD_CENTER_IMAGE = 0
 CSV_FIELD_LEFT_IMAGE   = 1
 CSV_FIELD_RIGHT_IMAGE  = 2
@@ -55,16 +58,17 @@ def get_line_count(filename):
 		line_count = sum(1 for _ in f)
 	return line_count
 
-def load_data_entry(features, labels, csv_row, use_lateral_images = True):
+def load_data_entry(features, labels, csv_row, data_path, use_lateral_images = True):
 	steering_center_angle = float(csv_row[CSV_FIELD_STEERING])
 	image_range           = 1
+	images_path           = os.path.join(data_path, IMAGES_PATH_NAME)
 
 	if (use_lateral_images):
 		image_range = CSV_IMAGE_COUNT
 
 	for i in range(image_range):
-		image_name     = csv_row[i] 
-		image          = cv2.imread(image_name)
+		image_name     = ntpath.basename(csv_row[i]) 
+		image          = cv2.imread(os.path.join(images_path, image_name))
 		image          = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 		image          = image[CROP_TOP : image.shape[0] - CROP_BOTTOM, : , ]
 		steering_angle = steering_center_angle
@@ -78,13 +82,14 @@ def load_data_entry(features, labels, csv_row, use_lateral_images = True):
 		labels.append(steering_angle)
 
 # Loads the CSV file with the information from the generated data
-def load_data(csv_filename, line_limit = -1, use_lateral_images = True):
-	row_count   = get_line_count(csv_filename)
-	file        = open(csv_filename)
-	reader      = csv.reader(file)
-	current_row = 0
-	features    = []
-	labels      = []
+def load_data(data_path, line_limit = -1, use_lateral_images = True):
+	csv_filename = os.path.join(data_path, CSV_FILENAME)
+	row_count    = get_line_count(csv_filename)
+	file         = open(csv_filename)
+	reader       = csv.reader(file)
+	current_row  = 0
+	features     = []
+	labels       = []
 
 	print("Loading data from generated images on {}...".format(csv_filename))
 
@@ -92,7 +97,7 @@ def load_data(csv_filename, line_limit = -1, use_lateral_images = True):
 		line_limit = row_count
 
 	for row in reader:
-		load_data_entry(features, labels, row, use_lateral_images)
+		load_data_entry(features, labels, row, data_path, use_lateral_images)
 		current_row += 1
 		printProgressBar(current_row, line_limit, prefix = "  Loading progress: ")
 		if (line_limit == current_row):
@@ -156,16 +161,27 @@ def build_model(image_shape):
 	# Layer 10. Fully Connected.
 	model.add(Dense(1, activation = 'linear'))
 
+	model.summary()
+
 	model.compile(optimizer = Adam(lr=LEARNING_RATE), loss='mse')
 
 	return model
 
 def train_model(model, X_train, y_train):
-	model.fit(X_train, y_train, validation_split = VALID_DATA_SIZE_FACTOR, shuffle = True, verbose = 1)
+	model.fit(X_train, y_train, nb_epoch = 7, validation_split = VALID_DATA_SIZE_FACTOR, shuffle = True, verbose = 1)
 	model.save("model.h5")
 
-features, labels, image_shape    = load_data("generated_data/driving_log.csv", 10, True)
+features, labels, image_shape    = load_data("generated_data/", 10, True)
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size = TEST_DATA_SIZE_FACTOR,  random_state = 42)
 
 model = build_model(image_shape)
 train_model(model, X_train, y_train)
+
+metrics = model.evaluate(X_test, y_test)
+
+print (metrics)
+
+#for metric_i in range(len(model.metrics_names)):
+#    metric_name  = model.metrics_names[metric_i]
+#    metric_value = metrics[metric_i]
+#    print('{}: {}'.format(metric_name, metric_value))
