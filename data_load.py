@@ -82,7 +82,7 @@ def load_data_entry(features, labels, csv_row, data_path, use_lateral_images = T
 		labels.append(steering_angle)
 
 # Loads the CSV file with the information from the generated data
-def load_data(data_path, line_limit = -1, use_lateral_images = True):
+def load_data(data_path, line_limit = -1, use_lateral_images = True, has_header = False):
 	csv_filename = os.path.join(data_path, CSV_FILENAME)
 	row_count    = get_line_count(csv_filename)
 	file         = open(csv_filename)
@@ -97,6 +97,10 @@ def load_data(data_path, line_limit = -1, use_lateral_images = True):
 		line_limit = row_count
 
 	for row in reader:
+		if (has_header and current_row == 0):
+			current_row = 1
+			continue
+
 		load_data_entry(features, labels, row, data_path, use_lateral_images)
 		current_row += 1
 		printProgressBar(current_row, line_limit, prefix = "  Loading progress: ")
@@ -171,7 +175,7 @@ def train_model(model, X_train, y_train):
 	model.fit(X_train, y_train, nb_epoch = 7, validation_split = VALID_DATA_SIZE_FACTOR, shuffle = True, verbose = 1)
 	model.save("model.h5")
 
-features, labels, image_shape    = load_data("data/", 10, True)
+features, labels, image_shape    = load_data("data/", 10, True, True)
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size = TEST_DATA_SIZE_FACTOR,  random_state = 42)
 
 model = build_model(image_shape)
