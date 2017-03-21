@@ -3,7 +3,7 @@ import base64
 from datetime import datetime
 import os
 import shutil
-
+import cv2
 import numpy as np
 import socketio
 import eventlet
@@ -15,6 +15,9 @@ from io import BytesIO
 from keras.models import load_model
 import h5py
 from keras import __version__ as keras_version
+
+CROP_TOP    = 70
+CROP_BOTTOM = 25
 
 sio = socketio.Server()
 app = Flask(__name__)
@@ -61,12 +64,13 @@ def telemetry(sid, data):
         imgString = data["image"]
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
+        image_array = image_array[CROP_TOP : image_array.shape[0] - CROP_BOTTOM, : , ]
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
 
-        throttle = controller.update(float(speed))
+        #throttle = controller.update(float(speed))
 
         print(steering_angle, throttle)
-        send_control(steering_angle, throttle)
+        send_control(steering_angle, 0.2)
 
         # save frame
         if args.image_folder != '':
