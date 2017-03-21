@@ -91,6 +91,14 @@ I also did a couple of runs swerving a little, to try to teach the model to reco
 
 The final data set had 44,553 images, that were the product of driving on the simulator, using a mouse. The load of the dataset is implemented by the method **load_data** in the file data_load.py.
 
+Below are a few examples of the training set images and the corresponding steering angles (in radians).
+
+![alt text](sample_images_dataset.png "Dataset Sample Images")
+
+The dataset has mostly zero values, or close to zero, as it can be seen in the next histogram. This can be because almost all the laps around the track that I did to collect the data were looking to stay in the middle. The data looks balanced because I also drove a similar amount of laps in the inverse direction. 
+
+![alt text](dataset_classes_final.png "Dataset Classes Distribution")
+
 The data was preprocessed, first removing the parts of the sky and trees (by cropping 70 pixels from the top, and 25 from the bottom) and then normalized to a range between 0 and 1. The cropping is done on the function **load_data_entry** on the line 75, and the normalization is done as part of the Keras model, using the Lambda object, on line 128:
 
 
@@ -119,8 +127,3 @@ To improve the results I got with this model, I think I could have designed the 
 I didn't flip the images, or use any data augmentation at all. I'm not sure if adding more data, with a training loss of 0.086 would be efective.
 
 The use of the other data from the simulator (throttle, brakes) to train the model, and use this output can help get a more precise driving in the simulator. 
-
-
-```python
-
-```
