@@ -175,7 +175,7 @@ def train_model(model, X_train, y_train):
 	model.fit(X_train, y_train, nb_epoch = 7, validation_split = VALID_DATA_SIZE_FACTOR, shuffle = True, verbose = 1)
 	model.save("model.h5")
 
-features, labels, image_shape    = load_data("data/", 10, True, True)
+features, labels, image_shape    = load_data("data/", -1, True, True)
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size = TEST_DATA_SIZE_FACTOR,  random_state = 42)
 
 model = build_model(image_shape)
