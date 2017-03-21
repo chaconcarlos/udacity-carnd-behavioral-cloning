@@ -6,10 +6,11 @@ import glob
 import math
 import keras
 import ntpath
+import matplotlib
+matplotlib.use('Agg')
 import numpy             as np
 import matplotlib.pyplot as plt
 
-matplotlib.use('Agg')
 
 from keras.models               import Sequential
 from keras.optimizers           import Adam
@@ -73,9 +74,7 @@ def load_data_entry(features, labels, csv_row, data_path, use_lateral_images = T
 	for i in range(image_range):
 		image_name     = ntpath.basename(csv_row[i]) 
 		image          = cv2.imread(os.path.join(images_path, image_name))
-		# Convert image to RGB, since that's what the simulator uses
 		image          = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-		# Crop the image, to remove unnecesary data, and noise.
 		image          = image[CROP_TOP : image.shape[0] - CROP_BOTTOM, : , ]
 		steering_angle = steering_center_angle
 
@@ -148,18 +147,24 @@ def build_model(image_shape):
 	model.add(Convolution2D(48, 3, 3, border_mode = 'valid', init ='glorot_uniform'))
 	model.add(Activation('elu'))
 	model.add(MaxPooling2D((2, 2), border_mode='valid'))
-	# Layer 5. Flatten.
+	
+	# Layer 5. Convolution 2D, 64 Filters, Kernel Size: 3x3. 
+	#model.add(Convolution2D(64, 3, 3, border_mode = 'valid', init ='glorot_uniform'))
+	#model.add(Activation('elu'))
+	#model.add(MaxPooling2D((2, 2), border_mode='valid'))
+	
+	# Layer 6. Flatten.
 	model.add(Flatten())
-	# Layer 6. Fully Connected.
+	# Layer 7. Fully Connected.
 	model.add(Dense(1164, init='uniform'))
 	model.add(Activation('elu'))
-	# Layer 7. Fully Connected.
+	# Layer 8. Fully Connected.
 	model.add(Dense(100, init='uniform'))
 	model.add(Activation('elu'))
-	# Layer 8. Fully Connected.
+	# Layer 9. Fully Connected.
 	model.add(Dense(50, init='uniform'))
 	model.add(Activation('elu'))
-	# Layer 9. Fully Connected.
+	# Layer 10. Fully Connected.
 	model.add(Dense(10, init='uniform'))
 	model.add(Activation('elu'))
 	# Layer 10. Fully Connected.
@@ -176,7 +181,7 @@ def train_model(model, X_train, y_train):
 	
 	print(history_object.history.keys())
 
-	model.save("model23.h5")
+	model.save("model2.h5")
 
 	plt.plot(history_object.history['loss'])
 	plt.plot(history_object.history['val_loss'])
@@ -186,9 +191,7 @@ def train_model(model, X_train, y_train):
 	plt.legend(['training set', 'validation set'], loc='upper right')
 	plt.savefig("data.png")
 
-# Load the data.
-features, labels, image_shape    = load_data("generated_data/", 10, True, True)
-# Split the sets.
+features, labels, image_shape    = load_data("data/", -1, True, True)
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size = TEST_DATA_SIZE_FACTOR,  random_state = 42)
 
 model = build_model(image_shape)
